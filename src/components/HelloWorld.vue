@@ -10,6 +10,7 @@ export default {
       inputProdNummer: false,
       inputProdukt: false,
       inputStückzahl: false,
+      valideStückzahl: false,
       theSeconds: "00",
       theMinutes: "00",
       theHours: "00",
@@ -110,6 +111,25 @@ export default {
         }
       }
     },
+    activateSendButton() {
+      console.log(this.dieStückzahl);
+      const regex = /^\d+$/;
+      if (this.dieStückzahl === "") {
+        this.sendActive = true;
+        this.valideStückzahl = false;
+      }
+      if (regex.test(this.dieStückzahl) === false && this.dieStückzahl !== "") {
+        alert("Bitte gebe nur Zahlen/Ziffern ein!!!");
+        this.inputStückzahl = true;
+      } else if (
+        regex.test(this.dieStückzahl) === true &&
+        this.dieStückzahl !== "" &&
+        this.allInputsFilled === true
+      ) {
+        this.valideStückzahl = true;
+        this.sendActive = false;
+      }
+    },
   },
   props: {
     msg: String,
@@ -148,8 +168,11 @@ export default {
         type="text"
         placeholder="Stückzahl"
         v-model.trim="dieStückzahl"
+        :disabled="!this.wasItStopped"
         :class="{ 'input-alert': inputStückzahl }"
         @click="inputStückzahl = false"
+        @blur="activateSendButton()"
+        @keyup="this.sendActive = true"
       />
     </div>
     <div class="button-area">
