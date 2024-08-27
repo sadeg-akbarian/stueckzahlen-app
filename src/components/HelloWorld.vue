@@ -10,12 +10,23 @@ export default {
       inputProdNummer: false,
       inputProdukt: false,
       inputStückzahl: false,
+      theSeconds: "00",
+      theMinutes: "00",
+      theHours: "00",
+      playActive: false,
+      haltActive: true,
+      stopActive: true,
+      sendActive: true,
+      allInputsFilled: false,
+      intervallRunning: null,
+      wasItStopped: false,
     };
   },
   methods: {
-    playFunction() {
+    checkRequirements() {
       if (this.benutzerName === "") {
         this.inputBenutzer = true;
+        this.allInputsFilled = false;
       } else {
         const regex = /^\d+$/;
         if (
@@ -23,17 +34,86 @@ export default {
           regex.test(this.produktionsNummer) === false
         ) {
           this.inputProdNummer = true;
+          this.allInputsFilled = false;
           alert(
             "Die Produktionsnummer muss genau 5-stellig sein und darf nur Zahlen/Ziffern enthalten!"
           );
         } else {
           if (this.produkt === "") {
             this.inputProdukt = true;
+            this.allInputsFilled = false;
           } else {
-            console.log("ööööööööööö");
+            this.allInputsFilled = true;
           }
         }
       }
+    },
+    startFunction() {
+      this.wasItStopped = false;
+      if (this.allInputsFilled === true) {
+        this.intervallRunning = setInterval(this.increaseTheTime, 1000);
+      }
+    },
+    haltStopFunction(whatWasClicked) {
+      clearInterval(this.intervallRunning);
+      if (whatWasClicked === "halt") {
+        this.wasItStopped = false;
+      } else {
+        this.wasItStopped = true;
+      }
+    },
+    increaseTheTime() {
+      if (this.theSeconds === "59") {
+        this.theSeconds = "00";
+        if (this.theMinutes === "59") {
+          this.theMinutes = "00";
+          let changedHours = Number(this.theHours);
+          changedHours++;
+          this.theHours = "" + changedHours;
+          if (this.theHours.length === 1) {
+            this.theHours = "0" + this.theHours;
+          }
+        } else {
+          let changedMinutes = Number(this.theMinutes);
+          changedMinutes++;
+          this.theMinutes = "" + changedMinutes;
+          if (this.theMinutes.length === 1) {
+            this.theMinutes = "0" + this.theMinutes;
+          }
+        }
+      } else {
+        let changedSeconds = Number(this.theSeconds);
+        changedSeconds++;
+        this.theSeconds = "" + changedSeconds;
+        if (this.theSeconds.length === 1) {
+          this.theSeconds = "0" + this.theSeconds;
+        }
+      }
+    },
+    changeButtonStatus(whichButton) {
+      if (this.allInputsFilled === true) {
+        if (whichButton === "playButton") {
+          this.playActive = true;
+          this.haltActive = false;
+          this.stopActive = false;
+          console.log("play");
+        } else if (whichButton === "haltButton") {
+          this.playActive = false;
+          this.haltActive = true;
+          this.stopActive = false;
+          console.log("halt");
+        } else if (whichButton === "stopButton") {
+          this.playActive = false;
+          this.haltActive = true;
+          this.stopActive = true;
+          console.log("stop");
+        }
+      }
+    },
+  },
+  computed: {
+    createTheTime() {
+      return this.theHours + ":" + this.theMinutes + ":" + this.theSeconds;
     },
   },
   props: {
@@ -78,10 +158,38 @@ export default {
       />
     </div>
     <div class="button-area">
-      <button type="button" @click="playFunction()">▶</button>
-      <button type="button">||</button>
-      <button type="button">■</button>
-      <button type="button">Senden</button>
+      <button
+        type="button"
+        :disabled="playActive"
+        @click="
+          checkRequirements(), changeButtonStatus('playButton'), startFunction()
+        "
+      >
+        ▶
+      </button>
+      <button
+        type="button"
+        :disabled="haltActive"
+        @click="
+          checkRequirements(),
+            changeButtonStatus('haltButton'),
+            haltStopFunction('halt')
+        "
+      >
+        ||
+      </button>
+      <button
+        type="button"
+        :disabled="stopActive"
+        @click="
+          checkRequirements(),
+            changeButtonStatus('stopButton'),
+            haltStopFunction('stop')
+        "
+      >
+        ■
+      </button>
+      <button type="button" :disabled="sendActive">Senden</button>
     </div>
     <div class="time-area">
       <p>
@@ -89,6 +197,7 @@ export default {
         ><span class="colon">:</span><span>00</span>
       </p>
     </div>
+    <p>{{ createTheTime }}</p>
   </div>
 </template>
 
