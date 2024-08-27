@@ -111,11 +111,6 @@ export default {
       }
     },
   },
-  computed: {
-    createTheTime() {
-      return this.theHours + ":" + this.theMinutes + ":" + this.theSeconds;
-    },
-  },
   props: {
     msg: String,
   },
@@ -193,11 +188,11 @@ export default {
     </div>
     <div class="time-area">
       <p>
-        <span>00</span><span class="colon">:</span><span>00</span
-        ><span class="colon">:</span><span>00</span>
+        <span>{{ theHours }}</span
+        ><span class="colon">:</span><span>{{ theMinutes }}</span
+        ><span class="colon">:</span><span>{{ theSeconds }}</span>
       </p>
     </div>
-    <p>{{ createTheTime }}</p>
   </div>
 </template>
 
