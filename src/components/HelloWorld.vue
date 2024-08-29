@@ -4,10 +4,12 @@ export default {
     return {
       benutzerName: "",
       produktionsNummer: "",
+      Kuerzel: "Wähle ein Kürzel",
       produkt: "",
       dieStückzahl: "",
       inputBenutzer: false,
       inputProdNummer: false,
+      inputKuerzel: false,
       inputProdukt: false,
       inputStückzahl: false,
       valideStückzahl: false,
@@ -21,6 +23,7 @@ export default {
       allInputsFilled: false,
       intervallRunning: null,
       wasItStopped: false,
+      displayFinalArea: "none",
     };
   },
   methods: {
@@ -40,11 +43,16 @@ export default {
             "Die Produktionsnummer muss genau 5-stellig sein und darf nur Zahlen/Ziffern enthalten!"
           );
         } else {
-          if (this.produkt === "") {
-            this.inputProdukt = true;
+          if (this.Kuerzel === "Wähle ein Kürzel") {
+            this.inputKuerzel = true;
             this.allInputsFilled = false;
           } else {
-            this.allInputsFilled = true;
+            if (this.produkt === "") {
+              this.inputProdukt = true;
+              this.allInputsFilled = false;
+            } else {
+              this.allInputsFilled = true;
+            }
           }
         }
       }
@@ -111,7 +119,7 @@ export default {
         }
       }
     },
-    activateSendButton() {
+    validateAchievedNumbers() {
       console.log(this.dieStückzahl);
       const regex = /^\d+$/;
       if (this.dieStückzahl === "") {
@@ -119,7 +127,7 @@ export default {
         this.valideStückzahl = false;
       }
       if (regex.test(this.dieStückzahl) === false && this.dieStückzahl !== "") {
-        alert("Bitte gebe nur Zahlen/Ziffern ein!!!");
+        alert("Bitte gebe nur Zahlen/Ziffern für die Stückzahl ein!!!");
         this.inputStückzahl = true;
       } else if (
         regex.test(this.dieStückzahl) === true &&
@@ -127,8 +135,67 @@ export default {
         this.allInputsFilled === true
       ) {
         this.valideStückzahl = true;
-        this.sendActive = false;
       }
+    },
+    deleteEverything() {
+      this.benutzerName = "";
+      this.produktionsNummer = "";
+      this.Kuerzel = "Wähle ein Kürzel";
+      this.produkt = "";
+      this.dieStückzahl = "";
+      this.inputBenutzer = false;
+      this.inputProdNummer = false;
+      this.inputKuerzel = false;
+      this.inputProdukt = false;
+      this.inputStückzahl = false;
+      this.valideStückzahl = false;
+      this.theSeconds = "00";
+      this.theMinutes = "00";
+      this.theHours = "00";
+      this.playActive = false;
+      this.haltActive = true;
+      this.stopActive = true;
+      this.sendActive = true;
+      this.allInputsFilled = false;
+      this.intervallRunning = null;
+      this.wasItStopped = false;
+      this.displayFinalArea = "none";
+    },
+    activateSendButton() {
+      if (this.valideStückzahl === true && this.allInputsFilled === true) {
+        this.sendActive = false;
+      } else {
+        alert("Bitte überprüfe nochmal alle Eingaben!");
+      }
+    },
+    sendTheData() {
+      function createUniqueId() {
+        const dateString = Date.now().toString(36);
+        const randomness = Math.random().toString(36).substring(2);
+        return dateString + randomness;
+      }
+      const uniqueId = createUniqueId();
+      const quantityNote = {
+        user: this.benutzerName,
+        productionNumber: this.produktionsNummer,
+        abbreviation: this.Kuerzel,
+        time: this.theHours + ":" + this.theMinutes + ":" + this.theSeconds,
+        quantity: this.dieStückzahl,
+        id: uniqueId,
+      };
+      let quantityNotesArchiv = JSON.parse(
+        localStorage.getItem("Quantity Notes")
+      );
+      if (quantityNotesArchiv === null) {
+        quantityNotesArchiv = [];
+      }
+      quantityNotesArchiv.push(quantityNote);
+      localStorage.setItem(
+        "Quantity Notes",
+        JSON.stringify(quantityNotesArchiv)
+      );
+      this.displayFinalArea = "none";
+      this.deleteEverything();
     },
   },
   props: {
@@ -148,14 +215,29 @@ export default {
           v-model.trim="benutzerName"
           :class="{ 'input-alert': inputBenutzer }"
           @click="inputBenutzer = false"
+          @blur=""
         />
-        <input
-          type="text"
-          placeholder="Produktions-Nummer"
-          v-model.trim="produktionsNummer"
-          :class="{ 'input-alert': inputProdNummer }"
-          @click="inputProdNummer = false"
-        />
+        <div class="fuerProdNummer">
+          <input
+            type="text"
+            placeholder="Produktions-Nummer"
+            v-model.trim="produktionsNummer"
+            :class="{ 'input-alert': inputProdNummer }"
+            @click="inputProdNummer = false"
+          />
+          <select
+            v-model="Kuerzel"
+            :class="{ 'input-alert': inputKuerzel }"
+            @click="inputKuerzel = false"
+          >
+            <option disabled selected>Wähle ein Kürzel</option>
+            <option value="KH1">KH1</option>
+            <option value="USB">USB</option>
+            <option value="DRS">DRS</option>
+            <option value="CD1">CD1</option>
+            <option value="DV1">DV1</option>
+          </select>
+        </div>
         <input
           type="text"
           placeholder="Produkt"
@@ -164,16 +246,24 @@ export default {
           @click="inputProdukt = false"
         />
       </div>
-      <input
-        type="text"
-        placeholder="Stückzahl"
-        v-model.trim="dieStückzahl"
-        :disabled="!this.wasItStopped"
-        :class="{ 'input-alert': inputStückzahl }"
-        @click="inputStückzahl = false"
-        @blur="activateSendButton()"
-        @keyup="this.sendActive = true"
-      />
+      <div class="after-programm-stoped">
+        <input
+          type="text"
+          placeholder="Stückzahl"
+          v-model.trim="dieStückzahl"
+          :disabled="!this.wasItStopped"
+          :class="{ 'input-alert': inputStückzahl }"
+          @click="inputStückzahl = false"
+          @blur="validateAchievedNumbers()"
+          @keyup="this.sendActive = true"
+        />
+        <div class="explanationForSendenButton">
+          Wenn alles richtig eingegeben ist, <br />
+          klicke bitte auf den grünen Kreis <br />
+          um den Senden-Button zu aktivieren!
+        </div>
+        <div class="green-circle" @click="activateSendButton()"></div>
+      </div>
     </div>
     <div class="button-area">
       <button
@@ -207,7 +297,13 @@ export default {
       >
         ■
       </button>
-      <button type="button" :disabled="sendActive">Senden</button>
+      <button
+        type="button"
+        :disabled="sendActive"
+        @click="displayFinalArea = 'block'"
+      >
+        Senden
+      </button>
     </div>
     <div class="time-area">
       <p>
@@ -216,17 +312,47 @@ export default {
         ><span class="colon">:</span><span>{{ theSeconds }}</span>
       </p>
     </div>
+    <div class="final-question-area" :style="{ display: displayFinalArea }">
+      <p>
+        Hast du alle Eingaben nochmal überpüft? <br />
+        Willst du die Daten wirklich abschicken?
+      </p>
+      <button
+        type="button"
+        class="final-buttons"
+        @click="displayFinalArea = 'none'"
+      >
+        Nein
+      </button>
+      <button type="button" class="final-buttons" @click="sendTheData()">
+        Ja
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.whole-area {
+  position: relative;
+}
+
 .input-area {
   display: flex;
-  gap: 3rem;
+  gap: 4rem;
+}
+
+.fuerProdNummer {
+  display: flex;
 }
 
 input {
   font-size: 1.5rem;
+}
+
+select {
+  margin-left: 0.5rem;
+  padding-inline: 0.25rem;
+  font-size: 1.25rem;
 }
 
 .input-alert {
@@ -239,8 +365,24 @@ input {
   gap: 1rem;
 }
 
-.input-area > input {
-  height: fit-content;
+.after-programm-stoped {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.explanationForSendenButton {
+  margin-top: 1rem;
+  font-weight: 800;
+  color: red;
+}
+
+.green-circle {
+  width: 3rem;
+  height: 3rem;
+  background-color: green;
+  border-radius: 50%;
+  margin-top: 1.5rem;
 }
 
 .button-area {
@@ -268,5 +410,18 @@ span {
 .colon {
   position: relative;
   top: -3px;
+}
+
+.final-question-area {
+  border: 1rem solid rgb(160, 28, 160);
+  padding-inline: 4rem;
+  padding-bottom: 4rem;
+  background-color: blue;
+  color: white;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 5vw;
+  left: -7.5vw;
 }
 </style>
