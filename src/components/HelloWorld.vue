@@ -23,7 +23,7 @@ export default {
       allInputsFilled: false,
       intervallRunning: null,
       wasItStopped: false,
-      displayFinalArea: "none",
+      displayFinalArea: false,
     };
   },
   methods: {
@@ -159,7 +159,7 @@ export default {
       this.allInputsFilled = false;
       this.intervallRunning = null;
       this.wasItStopped = false;
-      this.displayFinalArea = "none";
+      this.displayFinalArea = false;
     },
     activateSendButton() {
       if (this.valideStückzahl === true && this.allInputsFilled === true) {
@@ -176,12 +176,13 @@ export default {
       }
       const uniqueId = createUniqueId();
       const quantityNote = {
-        user: this.benutzerName,
+        id: uniqueId,
+        product: this.produkt,
         productionNumber: this.produktionsNummer,
         abbreviation: this.Kuerzel,
         time: this.theHours + ":" + this.theMinutes + ":" + this.theSeconds,
         quantity: this.dieStückzahl,
-        id: uniqueId,
+        user: this.benutzerName,
       };
       let quantityNotesArchiv = JSON.parse(
         localStorage.getItem("Quantity Notes")
@@ -194,7 +195,7 @@ export default {
         "Quantity Notes",
         JSON.stringify(quantityNotesArchiv)
       );
-      this.displayFinalArea = "none";
+      this.displayFinalArea = false;
       this.deleteEverything();
     },
   },
@@ -300,7 +301,7 @@ export default {
       <button
         type="button"
         :disabled="sendActive"
-        @click="displayFinalArea = 'block'"
+        @click="displayFinalArea = true"
       >
         Senden
       </button>
@@ -312,7 +313,7 @@ export default {
         ><span class="colon">:</span><span>{{ theSeconds }}</span>
       </p>
     </div>
-    <div class="final-question-area" :style="{ display: displayFinalArea }">
+    <div class="final-question-area" v-show="displayFinalArea">
       <p>
         Hast du alle Eingaben nochmal überpüft? <br />
         Willst du die Daten wirklich abschicken?
@@ -320,7 +321,7 @@ export default {
       <button
         type="button"
         class="final-buttons"
-        @click="displayFinalArea = 'none'"
+        @click="displayFinalArea = false"
       >
         Nein
       </button>
