@@ -1,4 +1,6 @@
 <script>
+import Papa from "papaparse";
+
 export default {
   data() {
     return {
@@ -24,6 +26,7 @@ export default {
       intervallRunning: null,
       wasItStopped: false,
       displayFinalArea: false,
+      serverLink: "\\192.168.10.11\Stückzahlen",
     };
   },
   methods: {
@@ -175,6 +178,9 @@ export default {
         return dateString + randomness;
       }
       const uniqueId = createUniqueId();
+
+      const newNoteInArray = [];
+
       const quantityNote = {
         id: uniqueId,
         product: this.produkt,
@@ -184,19 +190,66 @@ export default {
         quantity: this.dieStückzahl,
         user: this.benutzerName,
       };
-      let quantityNotesArchiv = JSON.parse(
-        localStorage.getItem("Quantity Notes")
-      );
-      if (quantityNotesArchiv === null) {
-        quantityNotesArchiv = [];
-      }
-      quantityNotesArchiv.push(quantityNote);
-      localStorage.setItem(
-        "Quantity Notes",
-        JSON.stringify(quantityNotesArchiv)
-      );
-      this.displayFinalArea = false;
-      this.deleteEverything();
+
+      newNoteInArray.push(quantityNote);
+
+      const csvContent = Papa.unparse(newNoteInArray);
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+      const formData = new FormData();
+      formData.append("file", blob, "quantityNodesList.csv"); // 'file' ist der Parametername für den Upload
+      // "file" ist der Parametername, den der Server erwartet, und "data.csv" ist der Dateiname, der mitgesendet wird.
+
+      console.log("üüüüüüüüüüüüüüüü");
+      this.sendDataToServer(formData);
+      // this.displayFinalArea = false;
+      // this.deleteEverything();
+    },
+    getDataFromServer() {
+      fetch("https://192.168.10.11/Stückzahlen")
+        .then((response) => {
+          if (response.ok) {
+            return response.blob(); // Zuerst als Text abrufen
+          } else {
+            alert("Data could not be loaded from server!!!");
+          }
+        })
+        .then((data) => {
+          console.log(data); // Ausgabe des zurückgegebenen Texts
+        })
+        .catch((error) => {
+          console.error("Fehler beim Abrufen der Daten:", error);
+        });
+    },
+    sendDataToServer(newQuantityNote) {
+      fetch("http://192.168.10.11/Stückzahlen/", {
+        method: "POST",
+        body: newQuantityNote,
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.blob();
+          }
+        })
+        .then((data) => {
+          console.log("Erfolgreich gesendet:", data);
+        })
+        .catch((error) => {
+          alert("Fehler beim Senden: " + error);
+        });
+    },
+    papaParseFunction() {
+      Papa.parse(meine_CSV_Datei, {
+        header: true, // Wenn du Kopfzeilen in der CSV hast, kannst du diese Option setzen
+        skipEmptyLines: true, // Leere Zeilen überspringen
+        complete: (results) => {
+          // Arbeite hier individuell weiter mit den results!
+        },
+        error: (error) => {
+          console.error("Error parsing CSV:", error);
+        },
+      });
     },
   },
   props: {
