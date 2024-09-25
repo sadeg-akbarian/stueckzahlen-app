@@ -26,7 +26,7 @@ export default {
       intervallRunning: null,
       wasItStopped: false,
       displayFinalArea: false,
-      serverLink: "\\192.168.10.11\Stückzahlen",
+      serverLink: "",
     };
   },
   methods: {
