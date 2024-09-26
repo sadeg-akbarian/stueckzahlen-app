@@ -1,4 +1,6 @@
 <script>
+import Papa from "papaparse";
+
 export default {
   data() {
     return {
@@ -23,7 +25,8 @@ export default {
       allInputsFilled: false,
       intervallRunning: null,
       wasItStopped: false,
-      displayFinalArea: "none",
+      displayFinalArea: false,
+      serverLink: "",
     };
   },
   methods: {
@@ -159,7 +162,7 @@ export default {
       this.allInputsFilled = false;
       this.intervallRunning = null;
       this.wasItStopped = false;
-      this.displayFinalArea = "none";
+      this.displayFinalArea = false;
     },
     activateSendButton() {
       if (this.valideStückzahl === true && this.allInputsFilled === true) {
@@ -175,27 +178,78 @@ export default {
         return dateString + randomness;
       }
       const uniqueId = createUniqueId();
+
+      const newNoteInArray = [];
+
       const quantityNote = {
-        user: this.benutzerName,
+        id: uniqueId,
+        product: this.produkt,
         productionNumber: this.produktionsNummer,
         abbreviation: this.Kuerzel,
         time: this.theHours + ":" + this.theMinutes + ":" + this.theSeconds,
         quantity: this.dieStückzahl,
-        id: uniqueId,
+        user: this.benutzerName,
       };
-      let quantityNotesArchiv = JSON.parse(
-        localStorage.getItem("Quantity Notes")
-      );
-      if (quantityNotesArchiv === null) {
-        quantityNotesArchiv = [];
-      }
-      quantityNotesArchiv.push(quantityNote);
-      localStorage.setItem(
-        "Quantity Notes",
-        JSON.stringify(quantityNotesArchiv)
-      );
-      this.displayFinalArea = "none";
-      this.deleteEverything();
+
+      newNoteInArray.push(quantityNote);
+
+      const csvContent = Papa.unparse(newNoteInArray);
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+      const formData = new FormData();
+      formData.append("file", blob, "quantityNodesList.csv"); // 'file' ist der Parametername für den Upload
+      // "file" ist der Parametername, den der Server erwartet, und "data.csv" ist der Dateiname, der mitgesendet wird.
+
+      console.log("üüüüüüüüüüüüüüüü");
+      this.sendDataToServer(formData);
+      // this.displayFinalArea = false;
+      // this.deleteEverything();
+    },
+    getDataFromServer() {
+      fetch("https://192.168.10.11/Stückzahlen")
+        .then((response) => {
+          if (response.ok) {
+            return response.blob(); // Zuerst als Text abrufen
+          } else {
+            alert("Data could not be loaded from server!!!");
+          }
+        })
+        .then((data) => {
+          console.log(data); // Ausgabe des zurückgegebenen Texts
+        })
+        .catch((error) => {
+          console.error("Fehler beim Abrufen der Daten:", error);
+        });
+    },
+    sendDataToServer(newQuantityNote) {
+      fetch("http://192.168.10.11/Stückzahlen/", {
+        method: "POST",
+        body: newQuantityNote,
+      })
+        .then((response) => {
+          if (response.ok) {
+            return response.blob();
+          }
+        })
+        .then((data) => {
+          console.log("Erfolgreich gesendet:", data);
+        })
+        .catch((error) => {
+          alert("Fehler beim Senden: " + error);
+        });
+    },
+    papaParseFunction() {
+      Papa.parse(meine_CSV_Datei, {
+        header: true, // Wenn du Kopfzeilen in der CSV hast, kannst du diese Option setzen
+        skipEmptyLines: true, // Leere Zeilen überspringen
+        complete: (results) => {
+          // Arbeite hier individuell weiter mit den results!
+        },
+        error: (error) => {
+          console.error("Error parsing CSV:", error);
+        },
+      });
     },
   },
   props: {
@@ -300,7 +354,7 @@ export default {
       <button
         type="button"
         :disabled="sendActive"
-        @click="displayFinalArea = 'block'"
+        @click="displayFinalArea = true"
       >
         Senden
       </button>
@@ -312,7 +366,7 @@ export default {
         ><span class="colon">:</span><span>{{ theSeconds }}</span>
       </p>
     </div>
-    <div class="final-question-area" :style="{ display: displayFinalArea }">
+    <div class="final-question-area" v-show="displayFinalArea">
       <p>
         Hast du alle Eingaben nochmal überpüft? <br />
         Willst du die Daten wirklich abschicken?
@@ -320,7 +374,7 @@ export default {
       <button
         type="button"
         class="final-buttons"
-        @click="displayFinalArea = 'none'"
+        @click="displayFinalArea = false"
       >
         Nein
       </button>
