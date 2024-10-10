@@ -7,3 +7,5 @@ Hiermit kann von einem Mitarbeiter die Stückzahl in einer bestimmten Zeit erfas
 - Es gibt die Möglichkeit die Zeit zu pausieren mit dem Pause-Button.
 - Wenn die Aufgabe erledigt ist, einfach den Stopp-Button anklicken und dann in das vorgesehene Eingabefeld die Stückzahl eintippen.
 - Wenn alles richtig eingegeben ist, auf den Senden-button klicken.
+
+Node version 20.10.0 benutzt
