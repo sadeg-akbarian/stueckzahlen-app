@@ -26,7 +26,7 @@ export default {
       intervallRunning: null,
       wasItStopped: false,
       displayFinalArea: false,
-      serverLink: "",
+      csvLink: "/stueckzahlen-csv/noteList.csv",
     };
   },
   methods: {
@@ -179,10 +179,16 @@ export default {
       }
       const uniqueId = createUniqueId();
 
-      const newNoteInArray = [];
+      const wholeDate = new Date();
+      const dateAndTime = wholeDate.toLocaleString();
+      const date = dateAndTime.slice(0, 10);
+      const dateSplitted = date.split(".");
 
       const quantityNote = {
         id: uniqueId,
+        year: dateSplitted[2],
+        month: dateSplitted[1],
+        day: dateSplitted[0],
         product: this.produkt,
         productionNumber: this.produktionsNummer,
         abbreviation: this.Kuerzel,
@@ -191,23 +197,11 @@ export default {
         user: this.benutzerName,
       };
 
-      newNoteInArray.push(quantityNote);
-
-      const csvContent = Papa.unparse(newNoteInArray);
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
-      const formData = new FormData();
-      formData.append("file", blob, "quantityNodesList.csv"); // 'file' ist der Parametername für den Upload
-      // "file" ist der Parametername, den der Server erwartet, und "data.csv" ist der Dateiname, der mitgesendet wird.
-
       console.log("üüüüüüüüüüüüüüüü");
-      this.sendDataToServer(formData);
-      // this.displayFinalArea = false;
-      // this.deleteEverything();
+      this.getDataFromServer(quantityNote);
     },
-    getDataFromServer() {
-      fetch("https://192.168.10.11/Stückzahlen")
+    getDataFromServer(newQuantityNote) {
+      fetch("/stueckzahlen-csv/noteList.csv")
         .then((response) => {
           if (response.ok) {
             return response.blob(); // Zuerst als Text abrufen
@@ -216,40 +210,58 @@ export default {
           }
         })
         .then((data) => {
-          console.log(data); // Ausgabe des zurückgegebenen Texts
+          this.papaParseFunction(data, newQuantityNote);
         })
         .catch((error) => {
           console.error("Fehler beim Abrufen der Daten:", error);
         });
     },
-    sendDataToServer(newQuantityNote) {
-      fetch("http://192.168.10.11/Stückzahlen/", {
-        method: "POST",
-        body: newQuantityNote,
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.blob();
-          }
-        })
-        .then((data) => {
-          console.log("Erfolgreich gesendet:", data);
-        })
-        .catch((error) => {
-          alert("Fehler beim Senden: " + error);
-        });
-    },
-    papaParseFunction() {
-      Papa.parse(meine_CSV_Datei, {
+    papaParseFunction(oldNoteList, theNewQuantityNote) {
+      Papa.parse(oldNoteList, {
         header: true, // Wenn du Kopfzeilen in der CSV hast, kannst du diese Option setzen
         skipEmptyLines: true, // Leere Zeilen überspringen
         complete: (results) => {
-          // Arbeite hier individuell weiter mit den results!
+          console.log(results);
+          console.log(theNewQuantityNote);
+          const updatedList = [...results.data, theNewQuantityNote];
+          console.log(updatedList);
+          const updatedCsv = Papa.unparse(updatedList);
+          console.log(updatedCsv);
+
+          const blob = new Blob([updatedCsv], {
+            type: "text/csv;charset=utf-8;",
+          });
+          const formData = new FormData();
+          formData.append("file", blob, "updatedFile.csv"); // 'file' ist der Parametername für den Upload
+          // "file" ist der Parametername, den der Server erwartet, und "data.csv" ist der Dateiname, der mitgesendet wird.
+          console.log("################");
+          this.sendDataToServer(formData);
         },
         error: (error) => {
           console.error("Error parsing CSV:", error);
         },
       });
+    },
+    sendDataToServer(newList) {
+      fetch("/stueckzahlen-csv/noteList.csv", {
+        method: "POST",
+        body: newList,
+      })
+        .then((response) => {
+          if (response.ok) {
+            console.log("Genau");
+            return response.blob();
+          } else {
+            console.log(response.status);
+            alert("Your data could not be added!!!");
+          }
+        })
+        .then((data) => {
+          console.log("Erfolgreich gesendet:", data);
+
+          this.displayFinalArea = false;
+          this.deleteEverything();
+        });
     },
   },
   props: {
